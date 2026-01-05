@@ -3,40 +3,44 @@
 <head>
 <meta charset="UTF-8">
 <title>Flooreno Item Scanner</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <style>
+    * {
+        box-sizing: border-box;
+    }
+
     body {
-        font-family: Arial, sans-serif;
-        background: #f4f6f8;
-        padding: 10px;
         margin: 0;
+        padding: 0;
+        background: #f4f6f8;
+        font-family: Arial, sans-serif;
+        overflow-x: hidden;
     }
 
     .container {
-        max-width: 100%;
-        background: #fff;
+        width: 100%;
         padding: 12px;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        background: #fff;
+        min-height: 100vh;
     }
 
     h2 {
         text-align: center;
-        margin: 10px 0 15px;
         font-size: 20px;
+        margin: 10px 0 15px;
     }
 
     .inputs {
         display: flex;
+        flex-direction: column;
         gap: 8px;
-        margin-bottom: 10px;
     }
 
     input {
-        flex: 1;
-        padding: 12px;
-        font-size: 16px;
+        width: 100%;
+        padding: 14px;
+        font-size: 17px;
         border-radius: 6px;
         border: 1px solid #ccc;
     }
@@ -44,26 +48,25 @@
     table {
         width: 100%;
         border-collapse: collapse;
-        margin-top: 10px;
+        margin-top: 12px;
         font-size: 14px;
+    }
+
+    thead {
+        background: #f0f0f0;
     }
 
     th, td {
         border: 1px solid #ddd;
         padding: 6px;
         text-align: center;
-    }
-
-    th {
-        background: #f0f0f0;
-        font-weight: bold;
+        white-space: nowrap;
     }
 
     td input {
         width: 60px;
         padding: 6px;
         font-size: 14px;
-        text-align: center;
     }
 
     .delete-btn {
@@ -74,31 +77,29 @@
         border-radius: 4px;
     }
 
+    .table-wrapper {
+        overflow-x: auto;
+        width: 100%;
+    }
+
     .actions {
         display: flex;
         gap: 8px;
         margin-top: 12px;
     }
 
-    .export-btn {
-        flex: 1;
-        background: #2ecc71;
-        color: #fff;
-        padding: 12px;
-        font-size: 16px;
-        border-radius: 6px;
-        border: none;
-    }
-
+    .export-btn,
     .clear-btn {
         flex: 1;
-        background: #e67e22;
-        color: #fff;
-        padding: 12px;
+        padding: 14px;
         font-size: 16px;
         border-radius: 6px;
         border: none;
+        color: #fff;
     }
+
+    .export-btn { background: #2ecc71; }
+    .clear-btn { background: #e67e22; }
 </style>
 </head>
 <body>
@@ -111,9 +112,11 @@
             id="scanInput"
             type="text"
             placeholder="Scan barcode"
-            autofocus
+            inputmode="text"
             enterkeyhint="next"
+            autofocus
         >
+
         <input
             id="qtyInput"
             type="number"
@@ -124,17 +127,19 @@
         >
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>System Id</th>
-                <th>Qty</th>
-                <th>✖</th>
-            </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-    </table>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>System Id</th>
+                    <th>Qty</th>
+                    <th>X</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
 
     <div class="actions">
         <button class="export-btn" onclick="exportCSV()">Export CSV</button>
@@ -147,16 +152,14 @@ const scanInput = document.getElementById("scanInput");
 const qtyInput = document.getElementById("qtyInput");
 const tableBody = document.getElementById("tableBody");
 
-/* ----------------- INPUT HANDLING ----------------- */
+/* ---------- INPUT HANDLING ---------- */
 
-// Scanner / desktop
+// Scanner / desktop Enter
 scanInput.addEventListener("keydown", e => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && scanInput.value.trim()) {
         e.preventDefault();
-        if (scanInput.value.trim()) {
-            qtyInput.focus();
-            qtyInput.select();
-        }
+        qtyInput.focus();
+        qtyInput.select();
     }
 });
 
@@ -168,14 +171,14 @@ qtyInput.addEventListener("keydown", e => {
     }
 });
 
-// iPhone ✓ Done key
+// iPhone ✓ Done
 qtyInput.addEventListener("change", () => {
     if (scanInput.value && qtyInput.value) {
         addRow();
     }
 });
 
-/* ----------------- CORE LOGIC ----------------- */
+/* ---------- CORE ---------- */
 
 function addRow() {
     const barcode = scanInput.value.trim();
@@ -192,41 +195,46 @@ function addRow() {
 
     tr.querySelector(".delete-btn").onclick = () => {
         tr.remove();
-        renumberRows();
-        saveTable();
+        renumber();
+        save();
     };
 
-    tr.querySelector("input").onchange = saveTable;
+    tr.querySelector("input").onchange = save;
 
     tableBody.prepend(tr);
-    renumberRows();
-    saveTable();
+    renumber();
+    save();
 
     scanInput.value = "";
     qtyInput.value = "";
-    scanInput.focus();
+
+    // ✅ iOS keyboard reopen fix
+    setTimeout(() => {
+        scanInput.focus();
+        scanInput.click();
+    }, 50);
 }
 
-function renumberRows() {
+function renumber() {
     [...tableBody.children].forEach((row, i) => {
         row.querySelector(".row-num").innerText = i + 1;
     });
 }
 
-/* ----------------- STORAGE ----------------- */
+/* ---------- STORAGE ---------- */
 
-function saveTable() {
+function save() {
     const data = [];
-    tableBody.querySelectorAll("tr").forEach(row => {
+    tableBody.querySelectorAll("tr").forEach(r => {
         data.push({
-            id: row.children[1].innerText,
-            qty: row.children[2].querySelector("input").value
+            id: r.children[1].innerText,
+            qty: r.children[2].querySelector("input").value
         });
     });
     localStorage.setItem("scannedItems", JSON.stringify(data));
 }
 
-function loadTable() {
+function load() {
     const data = JSON.parse(localStorage.getItem("scannedItems") || "[]");
     data.reverse().forEach(item => {
         scanInput.value = item.id;
@@ -235,7 +243,7 @@ function loadTable() {
     });
 }
 
-/* ----------------- ACTIONS ----------------- */
+/* ---------- ACTIONS ---------- */
 
 function clearAll() {
     if (!confirm("Clear all scanned items?")) return;
@@ -245,8 +253,8 @@ function clearAll() {
 
 function exportCSV() {
     let csv = "System Id,Qty\n";
-    tableBody.querySelectorAll("tr").forEach(row => {
-        csv += `${row.children[1].innerText},${row.children[2].querySelector("input").value}\n`;
+    tableBody.querySelectorAll("tr").forEach(r => {
+        csv += `${r.children[1].innerText},${r.children[2].querySelector("input").value}\n`;
     });
 
     const blob = new Blob([csv], { type: "text/csv" });
@@ -258,8 +266,8 @@ function exportCSV() {
     URL.revokeObjectURL(url);
 }
 
-/* Load saved data on page load */
-loadTable();
+/* Load saved data */
+load();
 </script>
 
 </body>
