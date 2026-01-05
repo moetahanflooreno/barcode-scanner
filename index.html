@@ -205,14 +205,12 @@ function addRow() {
     renumber();
     save();
 
+    // 🔑 IMPORTANT: do NOT blur scan input
     scanInput.value = "";
     qtyInput.value = "";
 
-    // ✅ iOS keyboard reopen fix
-    setTimeout(() => {
-        scanInput.focus();
-        scanInput.click();
-    }, 50);
+    // Natural focus back to scan input
+    scanInput.focus();
 }
 
 function renumber() {
@@ -269,6 +267,7 @@ function exportCSV() {
 /* Load saved data */
 load();
 </script>
+
 
 </body>
 </html>
