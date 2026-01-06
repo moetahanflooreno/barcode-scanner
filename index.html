@@ -36,11 +36,35 @@ button {
     border: none;
     margin-bottom: 8px;
 }
+.camera-controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
 
-.start-btn { background: #3498db; color: #fff; }
-.stop-btn { background: #95a5a6; color: #fff; }
-.export-btn { background: #2ecc71; color: #fff; }
-.clear-btn { background: #e67e22; color: #fff; }
+.camera-controls button {
+    padding: 14px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: none;
+}
+
+/* Start Camera – bigger */
+.start-btn {
+    flex: 3;
+    background: rgb(30, 30, 253);
+    color: #fff;
+}
+
+/* Stop Camera – smaller & red */
+.stop-btn {
+    flex: 1;
+    background: #e74c3c;
+    color: #fff;
+}
+
+.export-btn { background: rgb(30, 30, 253); color: #fff; }
+.clear-btn { background: #e74c3c; color: #fff; }
 
 #video {
     width: 100%;
@@ -89,15 +113,32 @@ th, td {
     padding: 6px 10px;
     border-radius: 4px;
 }
+h2 {
+    text-align: center;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    font-size: 28px;
+    background: linear-gradient(90deg, #007BFF 0%, #007BFF 50%, #FF3B3B 50%, #FF3B3B 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 20px;
+}
+
+
 </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Barcode Scanner</h2>
+    <h2>Flooreno Scanner</h2>
 
+<div class="camera-controls">
     <button class="start-btn" onclick="startCamera()">Start Camera</button>
-    <button class="stop-btn" onclick="stopCamera(true)">Stop Camera</button>
+    <button class="stop-btn" onclick="stopCamera(true)">Stop</button>
+</div>
+
 
     <video id="video" playsinline></video>
 
@@ -133,8 +174,8 @@ const qtyInput = document.getElementById("qtyInput");
 const tableBody = document.getElementById("tableBody");
 
 let codeReader;
-let cameraMode = false;      // USER INTENT
-let cameraRunning = false;   // ACTUAL STATE
+let cameraMode = false;      
+let cameraRunning = false;
 
 /* ================= CAMERA ================= */
 
@@ -149,7 +190,7 @@ function startCamera() {
     codeReader.decodeFromVideoDevice(null, video, (result) => {
         if (result) {
             scanInput.value = result.text;
-            stopCamera(false);   // stop camera but KEEP mode
+            stopCamera(false);
             openQtyKeyboard();
         }
     });
@@ -230,7 +271,6 @@ function addRow() {
     scanInput.value = "";
     qtyInput.value = "";
 
-    // 🔁 PERFECT LOOP
     if (cameraMode) {
         setTimeout(startCamera, 150);  // resume camera scanning
     } else {
@@ -289,7 +329,6 @@ function exportCSV() {
     URL.revokeObjectURL(url);
 }
 
-/* Load saved data — camera stays OFF */
 load();
 </script>
 
