@@ -6,9 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
 <style>
-* {
-    box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
     margin: 0;
@@ -33,22 +31,19 @@ button {
     font-size: 16px;
     border-radius: 6px;
     border: none;
+    margin-bottom: 8px;
+}
+
+.start-btn { background: #3498db; color: #fff; }
+.stop-btn { background: #95a5a6; color: #fff; }
+.clear-btn { background: #e67e22; color: #fff; }
+.export-btn { background: #2ecc71; color: #fff; }
+
+#video {
+    width: 100%;
+    border-radius: 6px;
+    display: none;
     margin-bottom: 10px;
-}
-
-.scan-btn {
-    background: #3498db;
-    color: #fff;
-}
-
-.clear-btn {
-    background: #e67e22;
-    color: #fff;
-}
-
-.export-btn {
-    background: #2ecc71;
-    color: #fff;
 }
 
 .inputs {
@@ -63,13 +58,6 @@ input {
     font-size: 16px;
     border-radius: 6px;
     border: 1px solid #ccc;
-}
-
-#video {
-    width: 100%;
-    border-radius: 6px;
-    display: none;
-    margin-bottom: 10px;
 }
 
 .table-wrapper {
@@ -103,13 +91,15 @@ th, td {
 <div class="container">
     <h2>Camera Scanner</h2>
 
-    <button class="scan-btn" onclick="startCamera()">Start Camera Scan</button>
+    <button class="start-btn" onclick="startCamera()">Start Camera</button>
+    <button class="stop-btn" onclick="stopCamera()">Stop Camera</button>
 
     <video id="video" playsinline></video>
 
     <div class="inputs">
         <input id="scanInput" type="text" placeholder="Scanned barcode" readonly>
-        <input id="qtyInput" type="number" placeholder="Qty" min="1" inputmode="numeric" enterkeyhint="done">
+        <input id="qtyInput" type="number" placeholder="Qty" min="1"
+               inputmode="numeric" enterkeyhint="done">
     </div>
 
     <div class="table-wrapper">
@@ -130,7 +120,6 @@ th, td {
     <button class="clear-btn" onclick="clearAll()">Clear All</button>
 </div>
 
-<!-- ZXing Barcode Library -->
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 
 <script>
@@ -140,31 +129,40 @@ const qtyInput = document.getElementById("qtyInput");
 const tableBody = document.getElementById("tableBody");
 
 let codeReader;
-let currentStream;
+let cameraActive = false;
 
-/* ---------- CAMERA SCAN ---------- */
+/* ---------- CAMERA ---------- */
 
 function startCamera() {
-    scanInput.value = "";
-    qtyInput.value = "";
+    if (cameraActive) return;
+
     video.style.display = "block";
-
     codeReader = new ZXing.BrowserMultiFormatReader();
+    cameraActive = true;
 
-    codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+    codeReader.decodeFromVideoDevice(null, video, (result) => {
         if (result) {
             scanInput.value = result.text;
-            stopCamera();
-            qtyInput.focus();
+            stopCamera();               // 🔑 STOP camera first
+            openQtyKeyboard();          // 🔑 THEN open keyboard
         }
     });
 }
 
 function stopCamera() {
-    if (codeReader) {
-        codeReader.reset();
-    }
+    if (codeReader) codeReader.reset();
+    cameraActive = false;
     video.style.display = "none";
+}
+
+/* ---------- KEYBOARD ---------- */
+
+function openQtyKeyboard() {
+    // This works because camera is stopped
+    setTimeout(() => {
+        qtyInput.focus();
+        qtyInput.click();
+    }, 50);
 }
 
 /* ---------- QTY INPUT ---------- */
@@ -211,6 +209,9 @@ function addRow() {
 
     scanInput.value = "";
     qtyInput.value = "";
+
+    // 🔁 Restart camera automatically
+    startCamera();
 }
 
 function renumber() {
@@ -264,7 +265,7 @@ function exportCSV() {
     URL.revokeObjectURL(url);
 }
 
-/* Load saved table */
+/* Load saved data */
 load();
 </script>
 
