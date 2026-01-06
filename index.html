@@ -190,6 +190,29 @@ let cameraRunning = false;
 
 /* ================= CAMERA ================= */
 
+function playBeep() {
+    try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.type = "sine";
+        oscillator.frequency.setValueAtTime(1000, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.12);
+    } catch (e) {
+        // silently fail if browser blocks audio
+    }
+}
+
+
 function startCamera() {
     cameraMode = true;
     if (cameraRunning) return;
@@ -200,6 +223,7 @@ function startCamera() {
 
     codeReader.decodeFromVideoDevice(null, video, (result) => {
         if (result) {
+            playBeep();
             scanInput.value = result.text;
             qtyInput.value = "";
             stopCamera(false);
@@ -346,7 +370,3 @@ load();
 
 </body>
 </html>
-
-
-
-
