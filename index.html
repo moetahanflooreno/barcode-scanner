@@ -2,129 +2,114 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Flooreno Item Scanner</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Camera Barcode Scanner</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
 <style>
-    * {
-        box-sizing: border-box;
-    }
+* {
+    box-sizing: border-box;
+}
 
-    body {
-        margin: 0;
-        padding: 0;
-        background: #f4f6f8;
-        font-family: Arial, sans-serif;
-        overflow-x: hidden;
-    }
+body {
+    margin: 0;
+    background: #f4f6f8;
+    font-family: Arial, sans-serif;
+}
 
-    .container {
-        width: 100%;
-        padding: 12px;
-        background: #fff;
-        min-height: 100vh;
-    }
+.container {
+    padding: 12px;
+    background: #fff;
+    min-height: 100vh;
+}
 
-    h2 {
-        text-align: center;
-        font-size: 20px;
-        margin: 10px 0 15px;
-    }
+h2 {
+    text-align: center;
+    margin: 10px 0;
+}
 
-    .inputs {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
+button {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: none;
+    margin-bottom: 10px;
+}
 
-    input {
-        width: 100%;
-        padding: 14px;
-        font-size: 17px;
-        border-radius: 6px;
-        border: 1px solid #ccc;
-    }
+.scan-btn {
+    background: #3498db;
+    color: #fff;
+}
 
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 12px;
-        font-size: 14px;
-    }
+.clear-btn {
+    background: #e67e22;
+    color: #fff;
+}
 
-    thead {
-        background: #f0f0f0;
-    }
+.export-btn {
+    background: #2ecc71;
+    color: #fff;
+}
 
-    th, td {
-        border: 1px solid #ddd;
-        padding: 6px;
-        text-align: center;
-        white-space: nowrap;
-    }
+.inputs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
 
-    td input {
-        width: 60px;
-        padding: 6px;
-        font-size: 14px;
-    }
+input {
+    flex: 1;
+    padding: 14px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
 
-    .delete-btn {
-        background: #e74c3c;
-        color: #fff;
-        border: none;
-        padding: 6px 10px;
-        border-radius: 4px;
-    }
+#video {
+    width: 100%;
+    border-radius: 6px;
+    display: none;
+    margin-bottom: 10px;
+}
 
-    .table-wrapper {
-        overflow-x: auto;
-        width: 100%;
-    }
+.table-wrapper {
+    overflow-x: auto;
+}
 
-    .actions {
-        display: flex;
-        gap: 8px;
-        margin-top: 12px;
-    }
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
 
-    .export-btn,
-    .clear-btn {
-        flex: 1;
-        padding: 14px;
-        font-size: 16px;
-        border-radius: 6px;
-        border: none;
-        color: #fff;
-    }
+th, td {
+    border: 1px solid #ddd;
+    padding: 6px;
+    text-align: center;
+    white-space: nowrap;
+}
 
-    .export-btn { background: #2ecc71; }
-    .clear-btn { background: #e67e22; }
+.delete-btn {
+    background: #e74c3c;
+    color: #fff;
+    border: none;
+    padding: 6px 10px;
+    border-radius: 4px;
+}
 </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>Flooreno Item Scanner</h2>
+    <h2>Camera Scanner</h2>
+
+    <button class="scan-btn" onclick="startCamera()">Start Camera Scan</button>
+
+    <video id="video" playsinline></video>
 
     <div class="inputs">
-        <input
-            id="scanInput"
-            type="text"
-            placeholder="Scan barcode"
-            inputmode="text"
-            enterkeyhint="next"
-            autofocus
-        >
-
-        <input
-            id="qtyInput"
-            type="number"
-            placeholder="Qty"
-            min="1"
-            inputmode="numeric"
-            enterkeyhint="done"
-        >
+        <input id="scanInput" type="text" placeholder="Scanned barcode" readonly>
+        <input id="qtyInput" type="number" placeholder="Qty" min="1" inputmode="numeric" enterkeyhint="done">
     </div>
 
     <div class="table-wrapper">
@@ -141,29 +126,49 @@
         </table>
     </div>
 
-    <div class="actions">
-        <button class="export-btn" onclick="exportCSV()">Export CSV</button>
-        <button class="clear-btn" onclick="clearAll()">Clear All</button>
-    </div>
+    <button class="export-btn" onclick="exportCSV()">Export CSV</button>
+    <button class="clear-btn" onclick="clearAll()">Clear All</button>
 </div>
 
+<!-- ZXing Barcode Library -->
+<script src="https://unpkg.com/@zxing/library@latest"></script>
+
 <script>
+const video = document.getElementById("video");
 const scanInput = document.getElementById("scanInput");
 const qtyInput = document.getElementById("qtyInput");
 const tableBody = document.getElementById("tableBody");
 
-/* ---------- INPUT HANDLING ---------- */
+let codeReader;
+let currentStream;
 
-// Scanner / desktop Enter
-scanInput.addEventListener("keydown", e => {
-    if (e.key === "Enter" && scanInput.value.trim()) {
-        e.preventDefault();
-        qtyInput.focus();
-        qtyInput.select();
+/* ---------- CAMERA SCAN ---------- */
+
+function startCamera() {
+    scanInput.value = "";
+    qtyInput.value = "";
+    video.style.display = "block";
+
+    codeReader = new ZXing.BrowserMultiFormatReader();
+
+    codeReader.decodeFromVideoDevice(null, video, (result, err) => {
+        if (result) {
+            scanInput.value = result.text;
+            stopCamera();
+            qtyInput.focus();
+        }
+    });
+}
+
+function stopCamera() {
+    if (codeReader) {
+        codeReader.reset();
     }
-});
+    video.style.display = "none";
+}
 
-// Qty Enter (desktop + iPhone return)
+/* ---------- QTY INPUT ---------- */
+
 qtyInput.addEventListener("keydown", e => {
     if (e.key === "Enter") {
         e.preventDefault();
@@ -171,14 +176,13 @@ qtyInput.addEventListener("keydown", e => {
     }
 });
 
-// iPhone ✓ Done
 qtyInput.addEventListener("change", () => {
     if (scanInput.value && qtyInput.value) {
         addRow();
     }
 });
 
-/* ---------- CORE ---------- */
+/* ---------- TABLE ---------- */
 
 function addRow() {
     const barcode = scanInput.value.trim();
@@ -205,12 +209,8 @@ function addRow() {
     renumber();
     save();
 
-    // 🔑 IMPORTANT: do NOT blur scan input
     scanInput.value = "";
     qtyInput.value = "";
-
-    // Natural focus back to scan input
-    scanInput.focus();
 }
 
 function renumber() {
@@ -264,10 +264,9 @@ function exportCSV() {
     URL.revokeObjectURL(url);
 }
 
-/* Load saved data */
+/* Load saved table */
 load();
 </script>
-
 
 </body>
 </html>
