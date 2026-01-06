@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Camera Barcode Scanner</title>
+<title>Barcode Scanner</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
 <style>
@@ -10,8 +10,8 @@
 
 body {
     margin: 0;
-    background: #f4f6f8;
     font-family: Arial, sans-serif;
+    background: #f4f6f8;
     overflow-x: hidden;
 }
 
@@ -39,8 +39,8 @@ button {
 
 .start-btn { background: #3498db; color: #fff; }
 .stop-btn { background: #95a5a6; color: #fff; }
-.clear-btn { background: #e67e22; color: #fff; }
 .export-btn { background: #2ecc71; color: #fff; }
+.clear-btn { background: #e67e22; color: #fff; }
 
 #video {
     width: 100%;
@@ -51,7 +51,7 @@ button {
 
 .inputs {
     display: flex;
-    flex-direction: column; /* MOBILE SAFE */
+    flex-direction: column;
     gap: 8px;
     margin-bottom: 12px;
 }
@@ -66,7 +66,7 @@ input {
 
 .table-wrapper {
     overflow-x: auto;
-    margin-bottom: 16px; /* ✅ spacing before buttons */
+    margin-bottom: 16px;
 }
 
 table {
@@ -94,30 +94,16 @@ th, td {
 <body>
 
 <div class="container">
-    <h2>Camera Scanner</h2>
+    <h2>Barcode Scanner</h2>
 
     <button class="start-btn" onclick="startCamera()">Start Camera</button>
-    <button class="stop-btn" onclick="stopCamera()">Stop Camera</button>
+    <button class="stop-btn" onclick="stopCamera(true)">Stop Camera</button>
 
     <video id="video" playsinline></video>
 
     <div class="inputs">
-        <!-- Editable now -->
-        <input
-            id="scanInput"
-            type="text"
-            placeholder="Scan or enter barcode"
-            enterkeyhint="next"
-        >
-
-        <input
-            id="qtyInput"
-            type="number"
-            placeholder="Qty"
-            min="1"
-            inputmode="numeric"
-            enterkeyhint="done"
-        >
+        <input id="scanInput" type="text" placeholder="Scan or enter barcode" enterkeyhint="next">
+        <input id="qtyInput" type="number" placeholder="Qty" min="1" inputmode="numeric" enterkeyhint="done">
     </div>
 
     <div class="table-wrapper">
@@ -147,33 +133,39 @@ const qtyInput = document.getElementById("qtyInput");
 const tableBody = document.getElementById("tableBody");
 
 let codeReader;
-let cameraActive = false;
+let cameraMode = false;      // USER INTENT
+let cameraRunning = false;   // ACTUAL STATE
 
-/* ---------- CAMERA ---------- */
+/* ================= CAMERA ================= */
 
 function startCamera() {
-    if (cameraActive) return;
+    cameraMode = true;
+    if (cameraRunning) return;
 
+    cameraRunning = true;
     video.style.display = "block";
     codeReader = new ZXing.BrowserMultiFormatReader();
-    cameraActive = true;
 
     codeReader.decodeFromVideoDevice(null, video, (result) => {
         if (result) {
             scanInput.value = result.text;
-            stopCamera();          // stop camera first
-            openQtyKeyboard();     // open keyboard
+            stopCamera(false);   // stop camera but KEEP mode
+            openQtyKeyboard();
         }
     });
 }
 
-function stopCamera() {
+function stopCamera(turnOffMode = false) {
     if (codeReader) codeReader.reset();
-    cameraActive = false;
+    cameraRunning = false;
     video.style.display = "none";
+
+    if (turnOffMode) {
+        cameraMode = false;
+    }
 }
 
-/* ---------- KEYBOARD ---------- */
+/* ================= KEYBOARD ================= */
 
 function openQtyKeyboard() {
     setTimeout(() => {
@@ -182,7 +174,18 @@ function openQtyKeyboard() {
     }, 50);
 }
 
-/* ---------- QTY INPUT ---------- */
+/* ================= ZEBRA SUPPORT ================= */
+
+scanInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        if (scanInput.value.trim()) {
+            openQtyKeyboard();
+        }
+    }
+});
+
+/* ================= QTY INPUT ================= */
 
 qtyInput.addEventListener("keydown", e => {
     if (e.key === "Enter") {
@@ -197,7 +200,7 @@ qtyInput.addEventListener("change", () => {
     }
 });
 
-/* ---------- TABLE ---------- */
+/* ================= TABLE ================= */
 
 function addRow() {
     const barcode = scanInput.value.trim();
@@ -227,11 +230,11 @@ function addRow() {
     scanInput.value = "";
     qtyInput.value = "";
 
-    // 🔁 restart camera ONLY if user was scanning
-    if (cameraActive === false) {
-        // do nothing
+    // 🔁 PERFECT LOOP
+    if (cameraMode) {
+        setTimeout(startCamera, 150);  // resume camera scanning
     } else {
-        startCamera();
+        setTimeout(() => scanInput.focus(), 30); // zebra loop
     }
 }
 
@@ -241,7 +244,7 @@ function renumber() {
     });
 }
 
-/* ---------- STORAGE ---------- */
+/* ================= STORAGE ================= */
 
 function save() {
     const data = [];
@@ -263,7 +266,7 @@ function load() {
     });
 }
 
-/* ---------- ACTIONS ---------- */
+/* ================= ACTIONS ================= */
 
 function clearAll() {
     if (!confirm("Clear all scanned items?")) return;
@@ -286,7 +289,7 @@ function exportCSV() {
     URL.revokeObjectURL(url);
 }
 
-/* Load saved table (camera stays OFF) */
+/* Load saved data — camera stays OFF */
 load();
 </script>
 
