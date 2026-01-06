@@ -193,8 +193,9 @@ function startCamera() {
     codeReader.decodeFromVideoDevice(null, video, (result) => {
         if (result) {
             scanInput.value = result.text;
+            qtyInput.value = "";
             stopCamera(false);
-            openQtyKeyboard();
+            openQtyKeyboard(); 
         }
     });
 }
@@ -337,5 +338,6 @@ load();
 
 </body>
 </html>
+
 
 
