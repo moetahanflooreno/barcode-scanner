@@ -12,9 +12,12 @@ body {
     margin: 0;
     background: #f4f6f8;
     font-family: Arial, sans-serif;
+    overflow-x: hidden;
 }
 
 .container {
+    width: 100%;
+    max-width: 100vw;
     padding: 12px;
     background: #fff;
     min-height: 100vh;
@@ -48,12 +51,13 @@ button {
 
 .inputs {
     display: flex;
+    flex-direction: column; /* MOBILE SAFE */
     gap: 8px;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
 }
 
 input {
-    flex: 1;
+    width: 100%;
     padding: 14px;
     font-size: 16px;
     border-radius: 6px;
@@ -62,6 +66,7 @@ input {
 
 .table-wrapper {
     overflow-x: auto;
+    margin-bottom: 16px; /* ✅ spacing before buttons */
 }
 
 table {
@@ -97,9 +102,22 @@ th, td {
     <video id="video" playsinline></video>
 
     <div class="inputs">
-        <input id="scanInput" type="text" placeholder="Scanned barcode" readonly>
-        <input id="qtyInput" type="number" placeholder="Qty" min="1"
-               inputmode="numeric" enterkeyhint="done">
+        <!-- Editable now -->
+        <input
+            id="scanInput"
+            type="text"
+            placeholder="Scan or enter barcode"
+            enterkeyhint="next"
+        >
+
+        <input
+            id="qtyInput"
+            type="number"
+            placeholder="Qty"
+            min="1"
+            inputmode="numeric"
+            enterkeyhint="done"
+        >
     </div>
 
     <div class="table-wrapper">
@@ -143,8 +161,8 @@ function startCamera() {
     codeReader.decodeFromVideoDevice(null, video, (result) => {
         if (result) {
             scanInput.value = result.text;
-            stopCamera();               // 🔑 STOP camera first
-            openQtyKeyboard();          // 🔑 THEN open keyboard
+            stopCamera();          // stop camera first
+            openQtyKeyboard();     // open keyboard
         }
     });
 }
@@ -158,7 +176,6 @@ function stopCamera() {
 /* ---------- KEYBOARD ---------- */
 
 function openQtyKeyboard() {
-    // This works because camera is stopped
     setTimeout(() => {
         qtyInput.focus();
         qtyInput.click();
@@ -175,7 +192,7 @@ qtyInput.addEventListener("keydown", e => {
 });
 
 qtyInput.addEventListener("change", () => {
-    if (scanInput.value && qtyInput.value) {
+    if (scanInput.value.trim() && qtyInput.value) {
         addRow();
     }
 });
@@ -210,8 +227,12 @@ function addRow() {
     scanInput.value = "";
     qtyInput.value = "";
 
-    // 🔁 Restart camera automatically
-    startCamera();
+    // 🔁 restart camera ONLY if user was scanning
+    if (cameraActive === false) {
+        // do nothing
+    } else {
+        startCamera();
+    }
 }
 
 function renumber() {
@@ -265,7 +286,7 @@ function exportCSV() {
     URL.revokeObjectURL(url);
 }
 
-/* Load saved data */
+/* Load saved table (camera stays OFF) */
 load();
 </script>
 
