@@ -349,9 +349,17 @@ function clearAll() {
 }
 
 function exportCSV() {
-    let csv = "System Id,Qty\n";
+    let csv = "System Id,Order Qty\n";
+
     tableBody.querySelectorAll("tr").forEach(r => {
-        csv += `${r.children[1].innerText},${r.children[2].querySelector("input").value}\n`;
+        let id = r.children[1].innerText.trim();
+        const qty = r.children[2].querySelector("input").value;
+
+        if (id.startsWith("210") && id.length === 13) {
+            id = id.slice(0, -1);
+        }
+
+        csv += `${id},${qty}\n`;
     });
 
     const blob = new Blob([csv], { type: "text/csv" });
@@ -368,4 +376,5 @@ load();
 
 </body>
 </html>
+
 
