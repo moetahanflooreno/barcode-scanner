@@ -12,7 +12,7 @@ body {
     margin: 0;
     font-family: Arial, sans-serif;
     background: #f4f6f8;
-    touch-action: manipulation; /* Prevent double-tap zoom */
+    touch-action: manipulation;
 }
 
 h2 {
@@ -22,7 +22,7 @@ h2 {
     background: linear-gradient(90deg, #007BFF 50%, #FF3B3B 50%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
 }
 
 .container {
@@ -66,7 +66,6 @@ button {
     object-fit: cover;
 }
 
-/* Inputs */
 .inputs {
     display: flex;
     flex-direction: column;
@@ -124,6 +123,8 @@ th.col-qty, td.col-qty { width: auto; }
     text-align: center;
     border-radius: 4px;
     border: 1px solid #ccc;
+    inputmode: numeric;
+    pattern: "[0-9]*";
 }
 
 .delete-btn {
@@ -134,6 +135,12 @@ th.col-qty, td.col-qty { width: auto; }
     border-radius: 4px;
     touch-action: manipulation;
 }
+
+/* Highlight colors for duplicates */
+.dup-color-1 { background: #fff3cd; }
+.dup-color-2 { background: #d4edda; }
+.dup-color-3 { background: #d1ecf1; }
+.dup-color-4 { background: #f8d7da; }
 </style>
 </head>
 
@@ -150,8 +157,10 @@ th.col-qty, td.col-qty { width: auto; }
 
     <div class="inputs">
         <input id="scanInput" type="text" placeholder="Scan or enter barcode">
-        <input id="qtyInput" type="number" placeholder="Quantity" min="1" inputmode="numeric">
+        <input id="qtyInput" type="number" placeholder="Qty (manual entry)" min="1" inputmode="numeric">
     </div>
+
+    <div id="uniqueCount" style="margin-bottom:10px; font-weight:bold;">Unique SKUs: 0</div>
 
     <table>
         <thead>
@@ -170,15 +179,19 @@ th.col-qty, td.col-qty { width: auto; }
 </div>
 
 <script src="https://unpkg.com/@zxing/library@latest"></script>
-
 <script>
 const video = document.getElementById("video");
 const scanInput = document.getElementById("scanInput");
 const qtyInput = document.getElementById("qtyInput");
 const tableBody = document.getElementById("tableBody");
+const uniqueCountDiv = document.getElementById("uniqueCount");
 
 let codeReader;
 let cameraRunning = false;
+let lastScanTime = 0;
+const scanDelay = 600; // 0.6 sec between scans
+
+const highlightColors = ["dup-color-1","dup-color-2","dup-color-3","dup-color-4"];
 
 /* 🔊 Beep */
 function playBeep() {
@@ -199,9 +212,11 @@ function startCamera() {
 
     codeReader = new ZXing.BrowserMultiFormatReader();
     codeReader.decodeFromVideoDevice(null, video, result => {
-        if (result) {
+        const now = Date.now();
+        if(result && now - lastScanTime > scanDelay) {
+            lastScanTime = now;
             playBeep();
-            addRowFast(result.text, 1);
+            addRowFast(result.text,1);
             setTimeout(startCamera, 120);
         }
     });
@@ -215,18 +230,16 @@ function stopCamera() {
 
 /* ➕ Add row */
 function addRowFast(barcode, qty) {
-    if (barcode.startsWith("210") && barcode.length === 13) {
-        barcode = barcode.slice(0, -1);
-    }
+    if(barcode.startsWith("210") && barcode.length===13) barcode=barcode.slice(0,-1);
 
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
         <td class="col-num row-num"></td>
         <td>${barcode}</td>
         <td class="col-qty">
             <div class="qty-box">
                 <button class="qty-btn">−</button>
-                <input class="qty-input" type="number" min="1" value="${qty}">
+                <input class="qty-input" type="number" min="1" value="${qty}" inputmode="numeric" pattern="[0-9]*">
                 <button class="qty-btn">+</button>
             </div>
         </td>
@@ -237,97 +250,118 @@ function addRowFast(barcode, qty) {
     const plus = tr.querySelectorAll(".qty-btn")[1];
     const input = tr.querySelector(".qty-input");
 
-    minus.onclick = () => { input.value = Math.max(1, parseInt(input.value)-1); save(); };
-    plus.onclick  = () => { input.value = parseInt(input.value)+1; save(); };
-    input.onchange = save;
+    minus.onclick=()=>{ input.value=Math.max(1,parseInt(input.value)-1); save(); highlightDuplicates(); updateUniqueCount(); };
+    plus.onclick=()=>{ input.value=parseInt(input.value)+1; save(); highlightDuplicates(); updateUniqueCount(); };
+    input.onchange=()=>{ save(); highlightDuplicates(); updateUniqueCount(); };
 
-    tr.querySelector(".delete-btn").onclick = () => { tr.remove(); renumber(); save(); };
+    tr.querySelector(".delete-btn").onclick=()=>{ tr.remove(); renumber(); save(); highlightDuplicates(); updateUniqueCount(); };
 
     tableBody.prepend(tr);
-    renumber();
-    save();
+    renumber(); save(); highlightDuplicates(); updateUniqueCount();
 
-    scanInput.value = "";
-    qtyInput.value = "";
+    scanInput.value=""; qtyInput.value="";
 }
 
-/* ⌨️ Manual add with ENTER / tick only */
-function tryManualAdd() {
-    const code = scanInput.value.trim();
-    const qty = parseInt(qtyInput.value);
-
-    if (!code) return;
-    if (!qty || qty < 1) {
-        qtyInput.focus();
-        return;
-    }
-
-    addRowFast(code, qty);
+/* ⌨️ Manual add with ENTER/tick */
+function tryManualAdd(){
+    const code=scanInput.value.trim();
+    const qty=parseInt(qtyInput.value);
+    if(!code) return;
+    if(!qty || qty<1){ qtyInput.focus(); return; }
+    addRowFast(code,qty);
     scanInput.focus();
 }
 
-/* ENTER handlers only */
-scanInput.addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); tryManualAdd(); } });
-qtyInput.addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); tryManualAdd(); } });
+/* ENTER handlers for scan & qty */
+scanInput.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); tryManualAdd(); } });
+qtyInput.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); tryManualAdd(); } });
 
 /* 🔢 Reverse numbering */
-function renumber() {
-    const rows = [...tableBody.children];
-    const total = rows.length;
-    rows.forEach((r,i)=> r.querySelector(".row-num").innerText = total - i);
+function renumber(){
+    const rows=[...tableBody.children]; const total=rows.length;
+    rows.forEach((r,i)=> r.querySelector(".row-num").innerText=total-i);
 }
 
 /* 💾 Storage */
-function save() {
-    const data = [];
-    tableBody.querySelectorAll("tr").forEach(r => {
-        data.push({ id: r.children[1].innerText, qty: r.querySelector(".qty-input").value });
+function save(){
+    const data=[];
+    tableBody.querySelectorAll("tr").forEach(r=>{
+        data.push({ id:r.children[1].innerText, qty:r.querySelector(".qty-input").value });
     });
-    localStorage.setItem("scannedItems", JSON.stringify(data));
+    localStorage.setItem("scannedItems",JSON.stringify(data));
 }
 
-function load() {
-    const data = JSON.parse(localStorage.getItem("scannedItems") || "[]");
-    data.reverse().forEach(d => addRowFast(d.id, d.qty));
+/* Highlight duplicates */
+function highlightDuplicates(){
+    const skuMap={};
+    [...tableBody.children].forEach(row=>{
+        const sku=row.children[1].innerText;
+        if(!skuMap[sku]) skuMap[sku]=[];
+        skuMap[sku].push(row);
+    });
+
+    let colorIndex=0;
+    Object.values(skuMap).forEach(rows=>{
+        const color = rows.length>1?highlightColors[colorIndex%highlightColors.length]:"";
+        rows.forEach(r=>{
+            highlightColors.forEach(c=>r.classList.remove(c));
+            if(color) r.classList.add(color);
+        });
+        if(rows.length>1) colorIndex++;
+    });
+}
+
+/* Unique SKU count */
+function updateUniqueCount(){
+    const skus=new Set([...tableBody.children].map(r=>r.children[1].innerText));
+    uniqueCountDiv.innerText=`Unique SKUs: ${skus.size}`;
+}
+
+function load(){
+    const data=JSON.parse(localStorage.getItem("scannedItems")||"[]");
+    data.reverse().forEach(d=>addRowFast(d.id,d.qty));
 }
 
 /* 🧹 Clear */
-function clearAll() {
-    if (!confirm("Clear all scanned items?")) return;
-    tableBody.innerHTML = "";
-    localStorage.removeItem("scannedItems");
+function clearAll(){
+    if(!confirm("Clear all scanned items?")) return;
+    tableBody.innerHTML=""; localStorage.removeItem("scannedItems");
+    highlightDuplicates(); updateUniqueCount();
 }
 
-/* 📁 Export */
-function exportCSV() {
-    let name = prompt("Enter file name:", "scanned_items");
-    if (!name) return;
-    if (!name.endsWith(".csv")) name += ".csv";
+/* 📁 Export CSV (combine duplicates) */
+function exportCSV(){
+    let name=prompt("Enter file name:","scanned_items");
+    if(!name) return;
+    if(!name.endsWith(".csv")) name+=".csv";
 
-    let csv = "System Id,Order Qty\n";
-    tableBody.querySelectorAll("tr").forEach(r => {
-        let id = r.children[1].innerText;
-        const qty = r.querySelector(".qty-input").value;
-        if (id.startsWith("210") && id.length === 13) id = id.slice(0,-1);
-        csv += `${id},${qty}\n`;
+    const combined={};
+    tableBody.querySelectorAll("tr").forEach(r=>{
+        let id=r.children[1].innerText;
+        let qty=parseInt(r.querySelector(".qty-input").value);
+        if(id.startsWith("210") && id.length===13) id=id.slice(0,-1);
+        if(combined[id]) combined[id]+=qty; else combined[id]=qty;
     });
 
-    const blob = new Blob([csv], { type:"text/csv" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = name;
+    let csv="System Id,Order Qty\n";
+    Object.entries(combined).forEach(([id,qty])=>{ csv+=`${id},${qty}\n`; });
+
+    const blob=new Blob([csv],{type:"text/csv"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);
+    a.download=name;
     a.click();
 }
 
-load();
+/* 🚫 iOS double-tap zoom prevention */
+let lastTouch=0;
+document.addEventListener('touchend',function(e){
+    const now=(new Date()).getTime();
+    if(now-lastTouch<=300) e.preventDefault();
+    lastTouch=now;
+},false);
 
-/* 🚫 Extra iOS safeguard against double-tap zoom */
-let lastTouch = 0;
-document.addEventListener('touchend', function(e){
-    const now = (new Date()).getTime();
-    if (now - lastTouch <= 300) e.preventDefault();
-    lastTouch = now;
-}, false);
+load(); highlightDuplicates(); updateUniqueCount();
 </script>
 </body>
 </html>
