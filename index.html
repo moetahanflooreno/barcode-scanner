@@ -49,12 +49,14 @@ button {
     border: none;
 }
 
+/* Start Camera – bigger */
 .start-btn {
     flex: 3;
     background: rgb(30, 30, 253);
     color: #fff;
 }
 
+/* Stop Camera – smaller & red */
 .stop-btn {
     flex: 1;
     background: #e74c3c;
@@ -223,9 +225,11 @@ function startCamera() {
         if (result) {
             playBeep();
             scanInput.value = result.text;
-            qtyInput.value = "";
+
+            qtyInput.value = "1";
             stopCamera(false);
-            openQtyKeyboard(); 
+
+            openQtyKeyboard();
         }
     });
 }
@@ -254,11 +258,14 @@ function openQtyKeyboard() {
 scanInput.addEventListener("keydown", e => {
     if (e.key === "Enter") {
         e.preventDefault();
+
         if (scanInput.value.trim()) {
+            qtyInput.value = "1";
             openQtyKeyboard();
         }
     }
 });
+
 
 /* ================= QTY INPUT ================= */
 
@@ -313,10 +320,14 @@ function addRow() {
 }
 
 function renumber() {
-    [...tableBody.children].forEach((row, i) => {
-        row.querySelector(".row-num").innerText = i + 1;
+    const rows = [...tableBody.children];
+    const total = rows.length;
+
+    rows.forEach((row, i) => {
+        row.querySelector(".row-num").innerText = total - i;
     });
 }
+
 
 /* ================= STORAGE ================= */
 
@@ -349,6 +360,15 @@ function clearAll() {
 }
 
 function exportCSV() {
+    let fileName = prompt("Enter file name:", "scanned_items");
+
+    if (!fileName) return; // cancel if user presses Cancel or leaves empty
+
+    // ensure .csv extension
+    if (!fileName.toLowerCase().endsWith(".csv")) {
+        fileName += ".csv";
+    }
+
     let csv = "System Id,Order Qty\n";
 
     tableBody.querySelectorAll("tr").forEach(r => {
@@ -364,17 +384,20 @@ function exportCSV() {
 
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
+
     const a = document.createElement("a");
     a.href = url;
-    a.download = "scanned_items.csv";
+    a.download = fileName;
     a.click();
+
     URL.revokeObjectURL(url);
 }
+
+
+
 
 load();
 </script>
 
 </body>
 </html>
-
-
