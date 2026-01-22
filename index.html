@@ -272,14 +272,30 @@ function tryManualAdd(){
     scanInput.focus();
 }
 
-/* ENTER handlers for scan & qty */
-scanInput.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); tryManualAdd(); } });
-qtyInput.addEventListener("keydown", e => {
-    if (e.key === "Enter") {
+// Press Enter on scan input → move to qty input
+scanInput.addEventListener("keydown", e => {
+    if(e.key === "Enter"){
         e.preventDefault();
-        addRow();
+        qtyInput.focus();
     }
 });
+
+// Press Enter on qty input → add row (hardware keyboards)
+qtyInput.addEventListener("keydown", e => {
+    if(e.key === "Enter"){
+        e.preventDefault();
+        tryManualAdd();
+    }
+});
+
+// iPhone numeric keyboard: when tick closes keyboard, add the row
+qtyInput.addEventListener("blur", () => {
+    // Only add if both fields have values
+    if(scanInput.value.trim() && qtyInput.value.trim()){
+        tryManualAdd();
+    }
+});
+
 
 /* 🔢 Reverse numbering */
 function renumber(){
