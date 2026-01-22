@@ -157,7 +157,7 @@ th.col-qty, td.col-qty { width: auto; }
 
     <div class="inputs">
         <input id="scanInput" type="text" placeholder="Scan or enter barcode">
-        <input id="qtyInput" type="number" placeholder="Qty (manual entry)" min="1" inputmode="numeric">
+        <input id="qtyInput" type="number" placeholder="Qty (manual entry)" min="1" inputmode="numeric" enterkeyhint="done">
     </div>
 
     <div id="uniqueCount" style="margin-bottom:10px; font-weight:bold;">Unique SKUs: 0</div>
@@ -365,4 +365,5 @@ load(); highlightDuplicates(); updateUniqueCount();
 </script>
 </body>
 </html>
+
 
