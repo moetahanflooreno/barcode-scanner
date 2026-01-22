@@ -12,12 +12,7 @@ body {
     margin: 0;
     font-family: Arial, sans-serif;
     background: #f4f6f8;
-}
-
-.container {
-    padding: 12px;
-    background: #fff;
-    min-height: 100vh;
+    touch-action: manipulation; /* Prevent double-tap zoom */
 }
 
 h2 {
@@ -30,10 +25,17 @@ h2 {
     margin-bottom: 20px;
 }
 
+.container {
+    padding: 12px;
+    background: #fff;
+    min-height: 100vh;
+}
+
 button {
     border: none;
     border-radius: 6px;
     font-size: 16px;
+    touch-action: manipulation;
 }
 
 .camera-controls {
@@ -77,6 +79,7 @@ input {
     font-size: 16px;
     border-radius: 6px;
     border: 1px solid #ccc;
+    touch-action: manipulation;
 }
 
 /* Table */
@@ -111,6 +114,7 @@ th.col-qty, td.col-qty { width: auto; }
     font-weight: bold;
     background: #eee;
     border-radius: 4px;
+    touch-action: manipulation;
 }
 
 .qty-input {
@@ -128,6 +132,7 @@ th.col-qty, td.col-qty { width: auto; }
     width: 34px;
     height: 34px;
     border-radius: 4px;
+    touch-action: manipulation;
 }
 </style>
 </head>
@@ -145,7 +150,7 @@ th.col-qty, td.col-qty { width: auto; }
 
     <div class="inputs">
         <input id="scanInput" type="text" placeholder="Scan or enter barcode">
-        <input id="qtyInput" type="number" placeholder="Qty (manual entry)" min="1" inputmode="numeric">
+        <input id="qtyInput" type="number" placeholder="Quantity" min="1" inputmode="numeric">
     </div>
 
     <table>
@@ -246,13 +251,12 @@ function addRowFast(barcode, qty) {
     qtyInput.value = "";
 }
 
-/* ⌨️ Manual add with ENTER support */
+/* ⌨️ Manual add with ENTER / tick only */
 function tryManualAdd() {
     const code = scanInput.value.trim();
     const qty = parseInt(qtyInput.value);
 
     if (!code) return;
-    // If Qty empty → focus it (like Tab)
     if (!qty || qty < 1) {
         qtyInput.focus();
         return;
@@ -262,7 +266,7 @@ function tryManualAdd() {
     scanInput.focus();
 }
 
-/* ENTER handlers */
+/* ENTER handlers only */
 scanInput.addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); tryManualAdd(); } });
 qtyInput.addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); tryManualAdd(); } });
 
@@ -316,6 +320,14 @@ function exportCSV() {
 }
 
 load();
+
+/* 🚫 Extra iOS safeguard against double-tap zoom */
+let lastTouch = 0;
+document.addEventListener('touchend', function(e){
+    const now = (new Date()).getTime();
+    if (now - lastTouch <= 300) e.preventDefault();
+    lastTouch = now;
+}, false);
 </script>
 </body>
 </html>
