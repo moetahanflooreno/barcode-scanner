@@ -274,7 +274,12 @@ function tryManualAdd(){
 
 /* ENTER handlers for scan & qty */
 scanInput.addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); tryManualAdd(); } });
-qtyInput.addEventListener("keydown", e=>{ if(e.key==="Enter" || e.key === "Done"){ e.preventDefault(); tryManualAdd(); } });
+qtyInput.addEventListener("keydown", e => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        addRow();
+    }
+});
 
 /* 🔢 Reverse numbering */
 function renumber(){
@@ -365,5 +370,3 @@ load(); highlightDuplicates(); updateUniqueCount();
 </script>
 </body>
 </html>
-
-
