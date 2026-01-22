@@ -12,12 +12,9 @@ body {
     margin: 0;
     font-family: Arial, sans-serif;
     background: #f4f6f8;
-    overflow-x: hidden;
 }
 
 .container {
-    width: 100%;
-    max-width: 100vw;
     padding: 12px;
     background: #fff;
     min-height: 100vh;
@@ -25,57 +22,49 @@ body {
 
 h2 {
     text-align: center;
-    margin: 10px 0;
+    font-size: 28px;
+    font-weight: bold;
+    background: linear-gradient(90deg, #007BFF 50%, #FF3B3B 50%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 20px;
 }
 
 button {
-    width: 100%;
-    padding: 14px;
-    font-size: 16px;
-    border-radius: 6px;
     border: none;
-    margin-bottom: 8px;
+    border-radius: 6px;
+    font-size: 16px;
 }
+
 .camera-controls {
     display: flex;
     gap: 8px;
     margin-bottom: 10px;
 }
 
-.camera-controls button {
+.start-btn { flex: 3; background: #1e1efd; color: #fff; padding: 14px; }
+.stop-btn { flex: 1; background: #e74c3c; color: #fff; padding: 14px; }
+
+.export-btn, .clear-btn {
+    width: 100%;
     padding: 14px;
-    font-size: 16px;
-    border-radius: 6px;
-    border: none;
-}
-
-/* Start Camera – bigger */
-.start-btn {
-    flex: 3;
-    background: rgb(30, 30, 253);
+    margin-top: 10px;
     color: #fff;
 }
 
-/* Stop Camera – smaller & red */
-.stop-btn {
-    flex: 1;
-    background: #e74c3c;
-    color: #fff;
-}
-
-.export-btn { background: rgb(30, 30, 253); color: #fff; }
-.clear-btn { background: #e74c3c; color: #fff; }
+.export-btn { background: #1e1efd; }
+.clear-btn { background: #e74c3c; }
 
 #video {
     width: 100%;
     height: 200px;
-    border-radius: 6px;
     display: none;
     margin-bottom: 10px;
+    border-radius: 6px;
     object-fit: cover;
 }
 
-
+/* Inputs */
 .inputs {
     display: flex;
     flex-direction: column;
@@ -84,93 +73,92 @@ button {
 }
 
 input {
-    width: 100%;
     padding: 14px;
     font-size: 16px;
     border-radius: 6px;
     border: 1px solid #ccc;
 }
 
-.table-wrapper {
-    overflow-x: auto;
-    margin-bottom: 16px;
-}
-
+/* Table */
 table {
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
+    table-layout: fixed;
 }
 
 th, td {
     border: 1px solid #ddd;
     padding: 6px;
     text-align: center;
-    white-space: nowrap;
 }
 
-th:nth-child(2), td:nth-child(2) {
-    width: 40%;
+th.col-num, td.col-num { width: 36px; }
+th.col-del, td.col-del { width: 40px; }
+th.col-qty, td.col-qty { width: auto; }
+
+/* Qty layout */
+.qty-box {
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+    gap: 4px;
 }
 
-th:nth-child(3), td:nth-child(3) {
-    width: 25%;
+.qty-btn {
+    width: 34px;
+    font-size: 20px;
+    font-weight: bold;
+    background: #eee;
+    border-radius: 4px;
+}
+
+.qty-input {
+    flex: 1;
+    width: 100%;
+    font-size: 16px;
+    text-align: center;
+    border-radius: 4px;
+    border: 1px solid #ccc;
 }
 
 .delete-btn {
     background: #e74c3c;
     color: #fff;
-    border: none;
-    padding: 6px 10px;
+    width: 34px;
+    height: 34px;
     border-radius: 4px;
 }
-h2 {
-    text-align: center;
-    font-family: Arial, sans-serif;
-    font-weight: bold;
-    font-size: 28px;
-    background: linear-gradient(90deg, #007BFF 0%, #007BFF 50%, #FF3B3B 50%, #FF3B3B 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    color: transparent;
-    margin-bottom: 20px;
-}
-
-
 </style>
 </head>
-<body>
 
+<body>
 <div class="container">
     <h2>Flooreno Scanner</h2>
 
-<div class="camera-controls">
-    <button class="start-btn" onclick="startCamera()">Start Camera</button>
-    <button class="stop-btn" onclick="stopCamera(true)">Stop</button>
-</div>
-
+    <div class="camera-controls">
+        <button class="start-btn" onclick="startCamera()">Start Camera</button>
+        <button class="stop-btn" onclick="stopCamera(true)">Stop</button>
+    </div>
 
     <video id="video" playsinline></video>
 
     <div class="inputs">
-        <input id="scanInput" type="text" placeholder="Scan or enter barcode" enterkeyhint="next">
-        <input id="qtyInput" type="number" placeholder="Qty" min="1" inputmode="numeric" enterkeyhint="done">
+        <input id="scanInput" type="text" placeholder="Scan or enter barcode">
+        <input id="qtyInput" type="number" placeholder="Qty (manual entry)" min="1" inputmode="numeric">
     </div>
 
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th>#</th>
-                    <th>SKU</th>
-                    <th>Qty</th>
-                    <th>X</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody"></tbody>
-        </table>
-    </div>
+    <table>
+        <thead>
+            <tr>
+                <th class="col-num">#</th>
+                <th>SKU</th>
+                <th class="col-qty">Qty</th>
+                <th class="col-del">X</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+    </table>
 
     <button class="export-btn" onclick="exportCSV()">Export CSV</button>
     <button class="clear-btn" onclick="clearAll()">Clear All</button>
@@ -185,125 +173,70 @@ const qtyInput = document.getElementById("qtyInput");
 const tableBody = document.getElementById("tableBody");
 
 let codeReader;
-let cameraMode = false;      
 let cameraRunning = false;
 
-/* ================= CAMERA ================= */
-
+/* 🔊 Beep */
 function playBeep() {
-    try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioContext();
-
-        const oscillator = audioCtx.createOscillator();
-        const gainNode = audioCtx.createGain();
-
-        oscillator.type = "sine";
-        oscillator.frequency.setValueAtTime(1000, audioCtx.currentTime);
-        gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
-
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-
-        oscillator.start();
-        oscillator.stop(audioCtx.currentTime + 0.12);
-    } catch (e) {
-        // silently fail if browser blocks audio
-    }
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.frequency.value = 1000;
+    g.gain.value = 0.2;
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime + 0.1);
 }
 
-
+/* 📷 Camera scan */
 function startCamera() {
-    cameraMode = true;
     if (cameraRunning) return;
-
     cameraRunning = true;
     video.style.display = "block";
-    codeReader = new ZXing.BrowserMultiFormatReader();
 
-    codeReader.decodeFromVideoDevice(null, video, (result) => {
+    codeReader = new ZXing.BrowserMultiFormatReader();
+    codeReader.decodeFromVideoDevice(null, video, result => {
         if (result) {
             playBeep();
-            scanInput.value = result.text;
-
-            qtyInput.value = "1";
-            stopCamera(false);
-
-            openQtyKeyboard();
+            addRowFast(result.text, 1);
+            setTimeout(startCamera, 120);
         }
     });
 }
 
-function stopCamera(turnOffMode = false) {
+function stopCamera() {
     if (codeReader) codeReader.reset();
     cameraRunning = false;
     video.style.display = "none";
-
-    if (turnOffMode) {
-        cameraMode = false;
-    }
 }
 
-/* ================= KEYBOARD ================= */
-
-function openQtyKeyboard() {
-    setTimeout(() => {
-        qtyInput.focus();
-        qtyInput.click();
-    }, 50);
-}
-
-/* ================= ZEBRA SUPPORT ================= */
-
-scanInput.addEventListener("keydown", e => {
-    if (e.key === "Enter") {
-        e.preventDefault();
-
-        if (scanInput.value.trim()) {
-            qtyInput.value = "1";
-            openQtyKeyboard();
-        }
+/* ➕ Add row */
+function addRowFast(barcode, qty) {
+    if (barcode.startsWith("210") && barcode.length === 13) {
+        barcode = barcode.slice(0, -1);
     }
-});
-
-
-/* ================= QTY INPUT ================= */
-
-qtyInput.addEventListener("keydown", e => {
-    if (e.key === "Enter") {
-        e.preventDefault();
-        addRow();
-    }
-});
-
-qtyInput.addEventListener("change", () => {
-    if (scanInput.value.trim() && qtyInput.value) {
-        addRow();
-    }
-});
-
-/* ================= TABLE ================= */
-
-function addRow() {
-    const barcode = scanInput.value.trim();
-    const qty = qtyInput.value.trim();
-    if (!barcode || !qty) return;
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-        <td class="row-num"></td>
+        <td class="col-num row-num"></td>
         <td>${barcode}</td>
-        <td><input type="number" value="${qty}" min="1"></td>
-        <td><button class="delete-btn">X</button></td>
+        <td class="col-qty">
+            <div class="qty-box">
+                <button class="qty-btn">−</button>
+                <input class="qty-input" type="number" min="1" value="${qty}">
+                <button class="qty-btn">+</button>
+            </div>
+        </td>
+        <td class="col-del"><button class="delete-btn">X</button></td>
     `;
 
-    tr.querySelector(".delete-btn").onclick = () => {
-        tr.remove();
-        renumber();
-        save();
-    };
+    const minus = tr.querySelectorAll(".qty-btn")[0];
+    const plus = tr.querySelectorAll(".qty-btn")[1];
+    const input = tr.querySelector(".qty-input");
 
-    tr.querySelector("input").onchange = save;
+    minus.onclick = () => { input.value = Math.max(1, parseInt(input.value)-1); save(); };
+    plus.onclick  = () => { input.value = parseInt(input.value)+1; save(); };
+    input.onchange = save;
+
+    tr.querySelector(".delete-btn").onclick = () => { tr.remove(); renumber(); save(); };
 
     tableBody.prepend(tr);
     renumber();
@@ -311,93 +244,78 @@ function addRow() {
 
     scanInput.value = "";
     qtyInput.value = "";
-
-    if (cameraMode) {
-        setTimeout(startCamera, 150);  // resume camera scanning
-    } else {
-        setTimeout(() => scanInput.focus(), 30); // zebra loop
-    }
 }
 
+/* ⌨️ Manual add with ENTER support */
+function tryManualAdd() {
+    const code = scanInput.value.trim();
+    const qty = parseInt(qtyInput.value);
+
+    if (!code) return;
+    // If Qty empty → focus it (like Tab)
+    if (!qty || qty < 1) {
+        qtyInput.focus();
+        return;
+    }
+
+    addRowFast(code, qty);
+    scanInput.focus();
+}
+
+/* ENTER handlers */
+scanInput.addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); tryManualAdd(); } });
+qtyInput.addEventListener("keydown", e => { if(e.key==="Enter"){ e.preventDefault(); tryManualAdd(); } });
+
+/* 🔢 Reverse numbering */
 function renumber() {
     const rows = [...tableBody.children];
     const total = rows.length;
-
-    rows.forEach((row, i) => {
-        row.querySelector(".row-num").innerText = total - i;
-    });
+    rows.forEach((r,i)=> r.querySelector(".row-num").innerText = total - i);
 }
 
-
-/* ================= STORAGE ================= */
-
+/* 💾 Storage */
 function save() {
     const data = [];
     tableBody.querySelectorAll("tr").forEach(r => {
-        data.push({
-            id: r.children[1].innerText,
-            qty: r.children[2].querySelector("input").value
-        });
+        data.push({ id: r.children[1].innerText, qty: r.querySelector(".qty-input").value });
     });
     localStorage.setItem("scannedItems", JSON.stringify(data));
 }
 
 function load() {
     const data = JSON.parse(localStorage.getItem("scannedItems") || "[]");
-    data.reverse().forEach(item => {
-        scanInput.value = item.id;
-        qtyInput.value = item.qty;
-        addRow();
-    });
+    data.reverse().forEach(d => addRowFast(d.id, d.qty));
 }
 
-/* ================= ACTIONS ================= */
-
+/* 🧹 Clear */
 function clearAll() {
     if (!confirm("Clear all scanned items?")) return;
     tableBody.innerHTML = "";
     localStorage.removeItem("scannedItems");
 }
 
+/* 📁 Export */
 function exportCSV() {
-    let fileName = prompt("Enter file name:", "scanned_items");
-
-    if (!fileName) return; // cancel if user presses Cancel or leaves empty
-
-    // ensure .csv extension
-    if (!fileName.toLowerCase().endsWith(".csv")) {
-        fileName += ".csv";
-    }
+    let name = prompt("Enter file name:", "scanned_items");
+    if (!name) return;
+    if (!name.endsWith(".csv")) name += ".csv";
 
     let csv = "System Id,Order Qty\n";
-
     tableBody.querySelectorAll("tr").forEach(r => {
-        let id = r.children[1].innerText.trim();
-        const qty = r.children[2].querySelector("input").value;
-
-        if (id.startsWith("210") && id.length === 13) {
-            id = id.slice(0, -1);
-        }
-
+        let id = r.children[1].innerText;
+        const qty = r.querySelector(".qty-input").value;
+        if (id.startsWith("210") && id.length === 13) id = id.slice(0,-1);
         csv += `${id},${qty}\n`;
     });
 
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-
+    const blob = new Blob([csv], { type:"text/csv" });
     const a = document.createElement("a");
-    a.href = url;
-    a.download = fileName;
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
     a.click();
-
-    URL.revokeObjectURL(url);
 }
-
-
-
 
 load();
 </script>
-
 </body>
 </html>
