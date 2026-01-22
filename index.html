@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>Flooreno Scanner</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <style>
 * { box-sizing: border-box; }
@@ -373,14 +373,6 @@ function exportCSV(){
     a.download=name;
     a.click();
 }
-
-/* 🚫 iOS double-tap zoom prevention */
-let lastTouch=0;
-document.addEventListener('touchend',function(e){
-    const now=(new Date()).getTime();
-    if(now-lastTouch<=300) e.preventDefault();
-    lastTouch=now;
-},false);
 
 load(); highlightDuplicates(); updateUniqueCount();
 </script>
